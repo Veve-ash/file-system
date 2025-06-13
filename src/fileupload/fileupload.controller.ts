@@ -1,11 +1,11 @@
 import { Controller, Get, Post, Body, Patch, Put, Param, Delete, Headers, UseGuards, UseInterceptors, UploadedFile, Res,Request, BadRequestException } from '@nestjs/common';
 import { FileuploadService } from './fileupload.service';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { CreateFileuploadDto } from './dto/create-fileupload.dto';
+import { UpdateFileuploadDto } from './dto/update-fileupload.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { LoginDto } from './dto/login.dto';
-import { Role } from './enum/user.role.enum';
+import { Role } from './enum/fileupload.role.enum';
 import { Roles } from './guard/role';
 import { RolesGuard } from './guard/role.guard';
 
@@ -18,7 +18,7 @@ export class FileuploadController {
   @Post('signup')
   @UseInterceptors(FileInterceptor('file')) // Allow profile picture upload during signup
   async create(
-    @Body() createUserDto: CreateUserDto,
+    @Body() createUserDto: CreateFileuploadDto,
     @UploadedFile() file?: Express.Multer.File,
   ) {
 
@@ -27,13 +27,13 @@ export class FileuploadController {
     if (!file) {
       console.warn('No file received in the request.');
     }
-    return this.fileploadService.create(createUserDto, file);
+    return this.fileuploadService.create(createUserDto, file);
   }
 
 
     @Post('signin')
   signIn(@Body() LoginDto: LoginDto, ) {
-    return this.fileploadService.signIn(LoginDto);
+    return this.fileuploadService.signIn(LoginDto);
   }
 
   @Get('getall')
@@ -45,7 +45,7 @@ export class FileuploadController {
 @Put(':id')
 @UseGuards(AuthGuard(), RolesGuard)
 @Roles(Role.Admin)
-update(@Param('id') id: string,  updateUserDto: UpdateUserDto) {
+update(@Param('id') id: string,  updateUserDto: UpdateFileuploadDto) {
   return this.fileuploadService.update(id, updateUserDto);
 }
 

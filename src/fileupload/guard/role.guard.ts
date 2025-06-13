@@ -1,7 +1,7 @@
 import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { FileuploadService } from "../fileupload.service";
-import { ForbiddenRoleException } from "../exception/user.exception";
+import { ForbiddenRoleException } from "../exception/fileupload.exception";
 
 
 @Injectable()

@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, HttpException, Injectable, NotFoundException, Res, UnauthorizedException, OnModuleInit, Logger } from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { CreateFileuploadDto } from './dto/create-fileupload.dto';
+import { UpdateFileuploadDto } from './dto/update-fileupload.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { User } from './schemas/user.schema';
 import { JwtService } from '@nestjs/jwt';
@@ -9,18 +9,25 @@ import * as argon2 from 'argon2';
 import { LoginDto } from './dto/login.dto';
 import { Readable } from 'stream';
 import { v2 as cloudinary } from 'cloudinary';
-import { Upload } from './schemas/file.schema';
 
 @Injectable()
 export class FileuploadService implements OnModuleInit {
-  private readonly logger = new Logger(UserService.name);
+  private readonly logger = new Logger(FileuploadService.name);
 
   // Admin data array (replace with your actual admins)
   private readonly adminUsers = [
     {
-      email: 'admin@example.com',
-      password: 'SecurePass123!',
+      Email: 'admin@example.com',
+      Password: 'SecurePass123!',
       firstName: 'System',
+      lastName: 'Admin',
+      role: 'admin',
+      isActive: true
+    },
+   { 
+     Email: 'admin@gmail.com',
+      Password: 'SecurePass123!',
+      firstName: 'System2',
       lastName: 'Admin',
       role: 'admin',
       isActive: true
@@ -32,8 +39,8 @@ export class FileuploadService implements OnModuleInit {
     @InjectModel(User.name)
     private userModel: Model<User>,
     private jwtService: JwtService,
-    @InjectModel(Upload.name)
-    private uploadModel: Model<Upload>,
+    @InjectModel(User.name)
+    private uploadModel: Model<User>,
   ) {}
 
 
@@ -46,18 +53,18 @@ export class FileuploadService implements OnModuleInit {
     try {
       for (const adminData of this.adminUsers) {
         const existingAdmin = await this.userModel.findOne({ 
-          email: adminData.email 
+          Email: adminData.Email 
         }).exec();
 
         if (!existingAdmin) {
-          const hashedPassword = await argon2.hash(adminData.password);
+          const hashedPassword = await argon2.hash(adminData.Password);
           await this.userModel.create({
             ...adminData,
-            password: hashedPassword
+            Password: hashedPassword
           });
-          this.logger.log(`✅ Admin user ${adminData.email} seeded successfully`);
+          this.logger.log(`✅ Admin user ${adminData.Email} seeded successfully`);
         } else {
-          this.logger.log(`ℹ Admin user ${adminData.email} already exists`);
+          this.logger.log(`ℹ Admin user ${adminData.Email} already exists`);
         }
       }
     } catch (error) {
@@ -66,26 +73,26 @@ export class FileuploadService implements OnModuleInit {
   }
 
 
-  async create(payload: CreateUserDto, file?: Express.Multer.File) {
+  async create(payload: CreateFileuploadDto, file?: Express.Multer.File) {
     try {
       // Validate required fields
-      if (!payload.email || !payload.password) {
+      if (!payload.Email || !payload.Password) {
         throw new BadRequestException('Email and password are required.');
       }
   
-      const existingUser = await this.userModel.findOne({ email: payload.email });
+      const existingUser = await this.userModel.findOne({ Email: payload.Email });
       if (existingUser) {
         throw new ConflictException('Email already exists, login or input a new email address');
       }
   
-      const { email, password, ...rest } = payload;
+      const { Email, Password, ...rest } = payload;
   
       // Hash the password
-      const hashPassword = await argon2.hash(password);
+      const hashPassword = await argon2.hash(Password);
   
       const userDetails = await this.userModel.create({
-        email,
-        password: hashPassword,
+        Email,
+        Password: hashPassword,
         ...rest,
       });
       console.log('Uploaded file:', file);
@@ -105,10 +112,10 @@ export class FileuploadService implements OnModuleInit {
         }
       }
   
-      const userPayload = { id: userDetails.id, email: userDetails.email, profilePictureUrl: userDetails.profilePictureUrl };
+      const userPayload = { id: userDetails.id, Email: userDetails.Email, profilePictureUrl: userDetails.profilePictureUrl };
       return {
         userId: userDetails.id,
-        userEmail: userDetails.email,
+        userEmail: userDetails.Email,
         profilePictureUrl: userDetails.profilePictureUrl || null,
         access_token: await this.jwtService.signAsync(userPayload),
       };
@@ -118,8 +125,8 @@ export class FileuploadService implements OnModuleInit {
     }
   }
 
-  async findEmail(email: string) {
-    const mail = await this.userModel.findOne({ email })
+  async findEmail(Email: string) {
+    const mail = await this.userModel.findOne({ Email })
     if (!mail) {
       throw new UnauthorizedException()
     }
@@ -139,20 +146,20 @@ export class FileuploadService implements OnModuleInit {
 
  
     async signIn(payload: LoginDto) {
-      const { email, password } = payload;
-      const user = await this.userModel.findOne({ email }).select('+password');
+      const { Email, Password } = payload;
+      const user = await this.userModel.findOne({ Email });
   
       if (!user) {
         throw new HttpException('No email found', 400);
       }
   
-      const checkedPassword = await this.verifyPassword(user.password, password);
+      const checkedPassword = await this.verifyPassword(user.Password, Password);
       if (!checkedPassword) {
         throw new HttpException('Password is incorrect!', 400);
       }
   
       const token = await this.jwtService.signAsync({
-        email: user.email,
+        Email: user.Email,
         id: user.id,
         role: user.role,
       });
@@ -191,7 +198,7 @@ export class FileuploadService implements OnModuleInit {
   
       return {
         id: user._id,
-        email: user.email,
+        email: user.Email,
         profilePictureUrl: user.profilePictureUrl || null,
         role: user.role
       
@@ -201,8 +208,14 @@ export class FileuploadService implements OnModuleInit {
     }
   }
   
-  findAll() {
-    const findAll = this.userModel.find();
+  async findAll() {
+    const findAll = await this.userModel.find();
+
+    if(!findAll){
+      throw new NotFoundException(' No User found!');
+    }
+    return findAll;
+    
   }
 
   async findOne(id: string) {
@@ -216,8 +229,8 @@ export class FileuploadService implements OnModuleInit {
     return findUserById;
   }
 
-  async update(id: string, updateUserDto: UpdateUserDto) {
-    const updatedUser = await this.userModel.findByIdAndUpdate(id, updateUserDto, { new: true });
+  async update(id: string, updateFileuploadDto: UpdateFileuploadDto) {
+    const updatedUser = await this.userModel.findByIdAndUpdate(id, updateFileuploadDto, { new: true });
     if (!updatedUser) {
       throw new NotFoundException('User not found');
     }
