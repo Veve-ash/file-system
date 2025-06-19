@@ -76,6 +76,7 @@ async blockUser(@Param('id') id: string) {
 }
 
 @Patch(':id/unblock')
+@UseGuards(AuthGuard(), RolesGuard )
 @Roles(Role.Admin)
 async unblockUser(@Param('id') id: string) {
   return this.fileuploadService.unBlockUser(id);
@@ -83,6 +84,7 @@ async unblockUser(@Param('id') id: string) {
 
 
   @Get(':id')
+  @UseGuards(AuthGuard())
   findOne(@Param('id') id: string) {
     return this.fileuploadService.findOne(id);
   }

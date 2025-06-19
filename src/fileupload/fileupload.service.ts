@@ -219,11 +219,11 @@ export class FileuploadService implements OnModuleInit {
   }
 
   async findOne(id: string) {
-    const user = await this.userModel.find()
 
-    const findUserById = await this.userModel.findOne({ id });
+    const findUserById = await this.userModel.findById(id);
+    console.log(findUserById)
     if (!findUserById) {
-      throw new HttpException('User not found', 404);
+      throw new NotFoundException('User not found');
     }
 
     return findUserById;
@@ -243,7 +243,7 @@ export class FileuploadService implements OnModuleInit {
 
 
   async blockUser(id:string): Promise<{message:string}>{
-    const user = await this.userModel.findOne({where : { id }});
+    const user = await this.userModel.findById( id );
     if(!user){ 
       throw new NotFoundException('User not found')
     };
@@ -254,7 +254,7 @@ export class FileuploadService implements OnModuleInit {
    }
 
    async unBlockUser(id:string): Promise<{message:string}>{
-    const user = await this.userModel.findOne({where : { id }});
+    const user = await this.userModel.findById( id );
     if(!user){ 
       throw new NotFoundException('User not found')
     };
