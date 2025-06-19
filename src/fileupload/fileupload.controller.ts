@@ -49,8 +49,22 @@ update(@Param('id') id: string,  updateUserDto: UpdateFileuploadDto) {
   return this.fileuploadService.update(id, updateUserDto);
 }
 
+@UseGuards(AuthGuard())
+  @Post('upload/:id')
+  @UseInterceptors(FileInterceptor('file')) // Ensure this matches the form-data key
+  async uploadFile(@UploadedFile() file: Express.Multer.File, @Param('id') id: string) {
+    if (!file) {
+      throw new BadRequestException('No file received. Please upload a valid file.');
+    }
+    try {
+      return await this.fileuploadService.uploadProfilePicture(file, id);
+    } catch (error) {
+      throw new BadRequestException(File upload failed: `${error.message}`);
+   }
+ }
+
   @UseGuards(AuthGuard()) // Ensure this guard is applied to protect the endpoint
-  @Post('upload')
+  @Post('update')
   @UseInterceptors(FileInterceptor('file')) // Ensure this matches the form-data key
   async uploadProfilePicture(
     @UploadedFile() file: Express.Multer.File,
