@@ -59,7 +59,7 @@ update(@Param('id') id: string,  updateUserDto: UpdateFileuploadDto) {
     try {
       return await this.fileuploadService.uploadProfilePicture(file, id);
     } catch (error) {
-      throw new BadRequestException(File upload failed: `${error.message}`);
+      throw new BadRequestException(`File upload failed: ${error.message}`);
    }
  }
 
